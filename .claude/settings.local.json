@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(pip install *)",
+      "Bash(where python *)",
+      "Bash(pip --version)",
+      "Bash(\"C:\\\\Users\\\\RIKUDEV\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" --version)",
+      "Bash(\"C:\\\\Users\\\\RIKUDEV\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m pip install pyinstaller flask flask-cors sqlalchemy werkzeug --quiet)",
+      "Bash(\"C:\\\\Users\\\\RIKUDEV\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m PyInstaller --version)",
+      "Bash(\"C:\\\\Users\\\\RIKUDEV\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m PyInstaller --onefile --name backend --distpath dist --noconfirm app.py)",
+      "Bash(npm run *)",
+      "Bash(npx electron-packager *)",
+      "Bash(copy /Y \"C:\\\\Users\\\\RIKUDEV\\\\Desktop\\\\App Llamadas\\\\backend\\\\dist\\\\backend.exe\" \"C:\\\\Users\\\\RIKUDEV\\\\Desktop\\\\App Llamadas\\\\dist-electron\\\\SAT Llamadas-win32-x64\\\\resources\\\\backend\\\\backend.exe\")",
+      "Bash(start /B python app.py)"
+    ]
+  }
+}

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src http://127.0.0.1:* http://localhost:*">
+  <title>SAT - Registro de Llamadas</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <h1>📞 Registro de Llamadas SAT</h1>
+      <div class="header-actions">
+        <button id="btnModoOscuro" class="btn btn-icon" title="Modo oscuro">🌙</button>
+        <button id="btnConfigEmail" class="btn btn-icon" title="Configurar email">⚙️</button>
+        <button id="btnDatos" class="btn btn-secondary">🗂 Datos</button>
+        <button id="btnBackup" class="btn btn-secondary">💾 Backup</button>
+        <button id="btnRestore" class="btn btn-secondary">♻️ Restaurar</button>
+        <button id="btnExportarCSV" class="btn btn-secondary">⬇️ Exportar CSV</button>
+        <button id="btnNuevaLlamada" class="btn btn-primary">+ Nueva Llamada</button>
+      </div>
+    </header>
+
+    <!-- Estadísticas -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-label">Hoy</span>
+        <span class="stat-value" id="statHoy">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Esta semana</span>
+        <span class="stat-value" id="statSemana">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Este mes</span>
+        <span class="stat-value" id="statMes">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Total</span>
+        <span class="stat-value" id="statTotal">0</span>
+      </div>
+    </div>
+
+    <!-- Búsqueda -->
+    <div class="search-bar">
+      <input type="text" id="busqueda" placeholder="🔍 Buscar por nombre, teléfono o motivo...">
+    </div>
+
+    <!-- Tabla -->
+    <main class="main-content">
+      <div class="table-container">
+        <table id="llamadasTable" class="table">
+          <thead>
+            <tr>
+              <th class="sortable" data-col="nombre_llamante">Nombre <span class="sort-icon">↕</span></th>
+              <th class="sortable" data-col="numero_telefono">Teléfono <span class="sort-icon">↕</span></th>
+              <th class="sortable" data-col="motivo">Motivo <span class="sort-icon">↕</span></th>
+              <th class="notas-column">Notas</th>
+              <th class="sortable" data-col="estado">Estado <span class="sort-icon">↕</span></th>
+              <th class="sortable" data-col="fecha_hora">Fecha/Hora <span class="sort-icon">↕</span></th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="llamadasBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div class="paginacion" id="paginacion"></div>
+    </main>
+  </div>
+
+  <!-- Diálogo de confirmación -->
+  <div id="dialogConfirm" class="dialog-overlay">
+    <div class="dialog-box">
+      <p>¿Está seguro que desea eliminar esta llamada?</p>
+      <div class="dialog-buttons">
+        <button id="dialogCancelar" class="btn btn-secondary">Cancelar</button>
+        <button id="dialogEliminar" class="btn btn-delete">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal configuración email -->
+  <div id="dialogEmail" class="dialog-overlay">
+    <div class="dialog-box" style="max-width:460px">
+      <h3 style="margin-bottom:16px">⚙️ Configuración de correo</h3>
+
+      <label class="email-config-label">Destinatario por defecto</label>
+      <p style="margin-bottom:8px;font-size:12px;color:#888">Se usará como destinatario al enviar correos desde la app.</p>
+      <input type="email" id="inputEmailDefault" placeholder="ejemplo@empresa.com" class="email-config-input">
+
+      <label class="email-config-label" style="margin-top:16px">Firma del correo</label>
+      <p style="margin-bottom:8px;font-size:12px;color:#888">Se añadirá al final del cuerpo de cada correo enviado.</p>
+      <textarea id="inputFirmaEmail" rows="5" placeholder="Ej:&#10;Atentamente,&#10;Juan García&#10;Servicio de Atención Técnica&#10;Tel: 91 234 56 78" class="email-config-input" style="resize:vertical;font-family:inherit"></textarea>
+
+      <div class="dialog-buttons" style="margin-top:20px">
+        <button id="dialogEmailCancelar" class="btn btn-secondary">Cancelar</button>
+        <button id="dialogEmailGuardar" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel lateral -->
+  <div id="panel" class="panel">
+    <div class="panel-overlay"></div>
+    <div class="panel-content">
+      <div class="panel-header">
+        <h2 id="panelTitle">Nueva Llamada</h2>
+        <button class="close-btn" id="closePanel">&times;</button>
+      </div>
+
+      <form id="formLlamada" class="form">
+        <input type="hidden" id="llamadaId">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nombre_llamante">Nombre del Llamante:</label>
+            <input type="text" id="nombre_llamante" placeholder="Ej: Juan Pérez" required>
+          </div>
+          <div class="form-group">
+            <label for="numero_telefono">Teléfono:</label>
+            <input type="tel" id="numero_telefono" placeholder="Ej: 612345678" required>
+            <span class="campo-error" id="errorTelefono"></span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="fecha_hora">Fecha y Hora:</label>
+          <div class="input-with-btn">
+            <input type="datetime-local" id="fecha_hora" required>
+            <button type="button" id="btnAhora" class="btn btn-secondary btn-ahora" title="Usar hora actual">Ahora</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="motivo">Motivo:</label>
+            <input type="text" id="motivo" placeholder="Ej: Consulta SAT">
+          </div>
+          <div class="form-group">
+            <label for="estado">Estado:</label>
+            <select id="estado">
+              <option value="Pendiente">🟡 Pendiente</option>
+              <option value="Resuelto">🟢 Resuelto</option>
+              <option value="Seguimiento">🔵 Seguimiento</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="notas">Notas:</label>
+          <textarea id="notas" rows="4" placeholder="Notas adicionales..."></textarea>
+        </div>
+
+        <div class="panel-footer">
+          <button type="button" class="btn btn-secondary" id="cancelBtn">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
