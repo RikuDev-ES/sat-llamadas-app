@@ -1,6 +1,6 @@
 # 📞 SAT Call Logger - Registro de Llamadas
 
-Aplicación de escritorio moderna para registrar y gestionar llamadas entrantes al servicio SAT (Servicio de Administración Tributaria).
+Aplicación de escritorio moderna para registrar y gestionar llamadas entrantes al servicio SAT (Servicio de Atención Técnica).
 
 ## 🎯 Características
 
