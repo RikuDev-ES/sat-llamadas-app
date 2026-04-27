@@ -74,7 +74,7 @@ def _parse_datetime(value: str) -> datetime:
         return datetime.now()
 
 
-_ESTADOS_VALIDOS = {"Pendiente", "Resuelto", "Seguimiento"}
+_ESTADOS_VALIDOS = {"Atendida", "Finalizada", "Enviada por correo"}
 
 
 def _validar_llamada_payload(data: dict, parcial: bool) -> tuple[bool, str]:
@@ -167,7 +167,7 @@ def create_llamada():
             duracion_minutos = int(data.get("duracion_minutos", 0)),
             motivo           = data.get("motivo", "Consulta SAT"),
             notas            = data.get("notas", ""),
-            estado           = data.get("estado", "Pendiente"),
+            estado           = data.get("estado", "Atendida"),
         )
         db.add(nueva)
         db.commit()

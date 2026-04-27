@@ -21,7 +21,7 @@ class Llamada(Base):
         duracion_minutos — Duración de la llamada en minutos (reservado, por defecto 0).
         motivo           — Motivo o categoría de la llamada (máx. 100 chars).
         notas            — Notas detalladas sobre la llamada (texto libre).
-        estado           — Estado del caso: 'Pendiente', 'Resuelto' o 'Seguimiento'.
+        estado           — Estado del caso: 'Atendida', 'Finalizada' o 'Enviada por correo'.
         created_at       — Timestamp de creación del registro (generado automáticamente).
     """
 
@@ -34,7 +34,7 @@ class Llamada(Base):
     duracion_minutos = Column(Integer, default=0)
     motivo           = Column(String(100), default="Consulta SAT")
     notas            = Column(Text)
-    estado           = Column(String(20), default="Pendiente")
+    estado           = Column(String(30), default="Atendida")
     created_at       = Column(DateTime, default=datetime.now)
 
     def to_dict(self) -> dict:
@@ -47,6 +47,6 @@ class Llamada(Base):
             "duracion_minutos": self.duracion_minutos,
             "motivo":           self.motivo,
             "notas":            self.notas,
-            "estado":           self.estado or "Pendiente",
+            "estado":           self.estado or "Atendida",
             "created_at":       self.created_at.isoformat() if self.created_at else None,
         }

@@ -73,6 +73,13 @@ let sortCol = "fecha_hora";
 /** @type {'asc'|'desc'} Dirección de la ordenación */
 let sortDir = "desc";
 
+/**
+ * ID de la llamada actualmente en edición.
+ * Se usa como fuente de verdad para decidir PUT vs POST aunque el input hidden se limpie.
+ * @type {number|null}
+ */
+let llamadaEditandoId = null;
+
 // ─── Inicialización ───────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -250,7 +257,6 @@ llamadasBody.addEventListener("click", (e) => {
 
   switch (action) {
     case "email":     enviarCorreo(id);     break;
-    case "duplicate": duplicarLlamada(id);  break;
     case "edit":      abrirPanelEditar(id); break;
     case "delete":    eliminarLlamada(id);  break;
   }
@@ -353,9 +359,9 @@ function renderizarTabla() {
 
   // Mapa de estado → clase CSS del badge
   const BADGE_CLASS = {
-    Pendiente:   "badge-pendiente",
-    Resuelto:    "badge-resuelto",
-    Seguimiento: "badge-seguimiento",
+    Atendida:          "badge-pendiente",
+    Finalizada:        "badge-resuelto",
+    "Enviada por correo": "badge-seguimiento",
   };
 
   pagina.forEach((llamada) => {
@@ -365,22 +371,25 @@ function renderizarTabla() {
     const fecha      = new Date(llamada.fecha_hora).toLocaleString("es-ES");
     const badgeClass = BADGE_CLASS[llamada.estado] || "badge-pendiente";
     const notas      = (llamada.notas || "-").replace(/\n/g, " ");
+    const nombre     = llamada.nombre_llamante || "";
+    const telefono   = llamada.numero_telefono || "";
+    const motivo     = llamada.motivo || "-";
+    const estado     = llamada.estado || "Atendida";
 
     // innerHTML solo en el contenido de la fila (no en botones de acción)
     tr.innerHTML = `
-      <td>${_esc(llamada.nombre_llamante)}</td>
-      <td>${_esc(llamada.numero_telefono)}</td>
-      <td>${_esc(llamada.motivo || "-")}</td>
+      <td title="${_esc(nombre)}">${_esc(nombre)}</td>
+      <td title="${_esc(telefono)}">${_esc(telefono)}</td>
+      <td title="${_esc(motivo)}">${_esc(motivo)}</td>
       <td class="notas-column" title="${_esc(llamada.notas || "")}">
         <div class="nota-cell">
           <div class="nota-text">${_esc(notas)}</div>
         </div>
       </td>
-      <td><span class="badge ${badgeClass}">${_esc(llamada.estado || "Pendiente")}</span></td>
-      <td>${fecha}</td>
+      <td title="${_esc(estado)}"><span class="badge ${badgeClass}">${_esc(estado)}</span></td>
+      <td title="${_esc(fecha)}">${_esc(fecha)}</td>
       <td>
         <button class="btn btn-email btn-small"     data-action="email"     type="button" title="Enviar correo">📧</button>
-        <button class="btn btn-duplicate btn-small" data-action="duplicate" type="button" title="Duplicar">📋</button>
         <button class="btn btn-edit btn-small"      data-action="edit"      type="button" title="Editar">✏️</button>
         <button class="btn btn-delete btn-small"    data-action="delete"    type="button" title="Eliminar">🗑️</button>
       </td>
@@ -440,6 +449,7 @@ function renderizarPaginacion() {
  * Abre el panel en modo "Nueva llamada" con valores por defecto.
  */
 function abrirPanelNueva() {
+  llamadaEditandoId = null;
   document.getElementById("llamadaId").value = "";
   formLlamada.reset();
   document.getElementById("panelTitle").textContent = "Nueva Llamada";
@@ -449,7 +459,7 @@ function abrirPanelNueva() {
   ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
   document.getElementById("fecha_hora").value = ahora.toISOString().slice(0, 16);
   document.getElementById("motivo").value  = "Consulta SAT";
-  document.getElementById("estado").value  = "Pendiente";
+  document.getElementById("estado").value  = "Atendida";
 
   _habilitarFormulario();
   panel.classList.add("active");
@@ -465,13 +475,14 @@ function abrirPanelEditar(id) {
   if (!llamada) return;
 
   document.getElementById("panelTitle").textContent    = "Editar Llamada";
+  llamadaEditandoId = llamada.id;
   document.getElementById("llamadaId").value           = llamada.id;
   document.getElementById("fecha_hora").value          = llamada.fecha_hora.slice(0, 16);
   document.getElementById("numero_telefono").value     = llamada.numero_telefono;
   document.getElementById("nombre_llamante").value     = llamada.nombre_llamante;
   document.getElementById("motivo").value              = llamada.motivo || "";
   document.getElementById("notas").value               = llamada.notas  || "";
-  document.getElementById("estado").value              = llamada.estado  || "Pendiente";
+  document.getElementById("estado").value              = llamada.estado  || "Atendida";
 
   _habilitarFormulario();
   panel.classList.add("active");
@@ -499,7 +510,8 @@ async function guardarLlamada(e) {
     return;
   }
 
-  const llamadaId = document.getElementById("llamadaId").value;
+  const rawId = String(document.getElementById("llamadaId").value || "").trim();
+  const llamadaId = rawId !== "" ? rawId : (llamadaEditandoId !== null ? String(llamadaEditandoId) : "");
   const datos = {
     fecha_hora:       document.getElementById("fecha_hora").value,
     numero_telefono:  document.getElementById("numero_telefono").value,
@@ -521,6 +533,7 @@ async function guardarLlamada(e) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     cerrarPanel();
+    llamadaEditandoId = null;
     await Promise.all([cargarLlamadas(), cargarEstadisticas()]);
     mostrarExito(llamadaId ? "Llamada actualizada" : "Llamada creada");
   } catch {
@@ -562,6 +575,7 @@ function duplicarLlamada(id) {
   if (!llamada) return;
 
   document.getElementById("panelTitle").textContent    = "Nueva Llamada (copia)";
+  llamadaEditandoId = null;
   document.getElementById("llamadaId").value           = "";
 
   const ahora = new Date();
@@ -641,9 +655,21 @@ async function enviarCorreo(id) {
       asunto:   llamada.motivo          || "Consulta SAT",
       nombre:   llamada.nombre_llamante || "",
       telefono: llamada.numero_telefono || "",
-      estado:   llamada.estado          || "Pendiente",
+      estado:   llamada.estado          || "Atendida",
       notas:    llamada.notas           || "",
     });
+    // Si el correo se abre correctamente, marcamos el registro como enviado
+    // (sin bloquear la UX si el update falla).
+    try {
+      if (llamada.id && llamada.estado !== "Enviada por correo") {
+        await fetch(`${API_URL}/llamadas/${llamada.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ estado: "Enviada por correo" }),
+        });
+        await Promise.all([cargarLlamadas(), cargarEstadisticas()]);
+      }
+    } catch { /* silencioso */ }
     mostrarExito("Correo abierto en Outlook");
   } catch (err) {
     console.error("Error al abrir Outlook:", err);

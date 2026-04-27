@@ -330,10 +330,10 @@ ipcMain.handle("enviar-correo", async (_event, datos) => {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width:     1366,
-    height:    864,
-    minWidth:  900,
-    minHeight: 600,
+    width:     1500,
+    height:    920,
+    minWidth:  1100,
+    minHeight: 680,
     title:     "SAT — Registro de Llamadas",
     webPreferences: {
       preload:          path.join(__dirname, "preload.js"),
