@@ -238,19 +238,20 @@ function htmlEsc(str) {
  * @param {string} datos.asunto    — Asunto del correo
  * @param {string} datos.nombre    — Nombre del llamante
  * @param {string} datos.telefono  — Teléfono del llamante
- * @param {string} datos.estado    — Estado de la llamada
  * @param {string} datos.notas     — Notas de la llamada
  */
 ipcMain.handle("enviar-correo", async (_event, datos) => {
   // Contenido HTML con los datos de la llamada
   const notasHtml = htmlEsc(datos.notas || "").replace(/\n/g, "<br>");
+  const tel = String(datos.telefono || "").trim();
+  const telBlock = tel
+    ? `<p style="font-family:Calibri,sans-serif;font-size:11pt;margin:0 0 6px 0">` +
+      `<b>Teléfono:</b> ${htmlEsc(tel)}</p>`
+    : "";
   const cuerpoHtml =
     `<p style="font-family:Calibri,sans-serif;font-size:11pt;margin:0 0 6px 0">` +
     `<b>Nombre:</b> ${htmlEsc(datos.nombre)}</p>` +
-    `<p style="font-family:Calibri,sans-serif;font-size:11pt;margin:0 0 6px 0">` +
-    `<b>Teléfono:</b> ${htmlEsc(datos.telefono)}</p>` +
-    `<p style="font-family:Calibri,sans-serif;font-size:11pt;margin:0 0 6px 0">` +
-    `<b>Estado:</b> ${htmlEsc(datos.estado)}</p>` +
+    telBlock +
     `<p style="font-family:Calibri,sans-serif;font-size:11pt;margin:6px 0 0 0">` +
     `${notasHtml}</p><br>`;
 
@@ -329,12 +330,13 @@ ipcMain.handle("enviar-correo", async (_event, datos) => {
 // ─── Ventana principal ────────────────────────────────────────────────────────
 
 function createWindow() {
+  const winTitle = `SAT — Registro de Llamadas v${app.getVersion()}`;
   mainWindow = new BrowserWindow({
     width:     1500,
     height:    920,
     minWidth:  1100,
     minHeight: 680,
-    title:     "SAT — Registro de Llamadas",
+    title:     winTitle,
     webPreferences: {
       preload:          path.join(__dirname, "preload.js"),
       nodeIntegration:  false,
@@ -344,6 +346,9 @@ function createWindow() {
 
   mainWindow.setMenuBarVisibility(false);
   mainWindow.loadFile(path.join(__dirname, "index.html"));
+  mainWindow.webContents.once("did-finish-load", () => {
+    mainWindow.setTitle(winTitle);
+  });
   mainWindow.on("closed", () => { mainWindow = null; });
 }
 

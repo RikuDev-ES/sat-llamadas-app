@@ -10,9 +10,6 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {
-  /** Versión de la aplicación */
-  version: process.env.npm_package_version || "1.0.0",
-
   /**
    * Devuelve configuración del proceso principal (p.ej. apiBase).
    * @returns {Promise<{ apiBase: string }>}
@@ -33,7 +30,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   /**
    * Abre Outlook con los datos de la llamada pre-rellenados y la firma del usuario.
-   * @param {{ emailTo, asunto, nombre, telefono, estado, notas }} datos
+   * @param {{ emailTo, asunto, nombre, telefono, notas }} datos
    * @returns {Promise<boolean>}
    */
   enviarCorreo: (datos) => ipcRenderer.invoke("enviar-correo", datos),

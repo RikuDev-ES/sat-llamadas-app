@@ -89,19 +89,18 @@ def _validar_llamada_payload(data: dict, parcial: bool) -> tuple[bool, str]:
     if not parcial:
         if not req("nombre_llamante"):
             return False, "El campo 'nombre_llamante' es obligatorio"
-        if not req("numero_telefono"):
-            return False, "El campo 'numero_telefono' es obligatorio"
 
     if "numero_telefono" in data:
         tel = str(data.get("numero_telefono") or "").strip()
-        digits = re.sub(r"\D", "", tel)
-        if len(digits) < 7 or len(digits) > 15:
-            return False, "El teléfono debe tener entre 7 y 15 dígitos"
+        if tel != "":
+            digits = re.sub(r"\D", "", tel)
+            if len(digits) < 7 or len(digits) > 15:
+                return False, "El teléfono debe tener entre 7 y 15 dígitos"
 
     if "estado" in data:
         est = str(data.get("estado") or "").strip()
         if est and est not in _ESTADOS_VALIDOS:
-            return False, "El estado debe ser: Pendiente, Resuelto o Seguimiento"
+            return False, "El estado debe ser: Atendida, Finalizada o Enviada por correo"
 
     # Límites básicos para evitar entradas absurdamente grandes
     for field, max_len in (("nombre_llamante", 100), ("motivo", 100), ("numero_telefono", 30)):

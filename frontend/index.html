@@ -44,9 +44,41 @@
       </div>
     </div>
 
-    <!-- Búsqueda -->
-    <div class="search-bar">
-      <input type="text" id="busqueda" placeholder="🔍 Buscar por nombre, teléfono o motivo...">
+    <!-- Búsqueda y filtros (compacto) -->
+    <div class="filters-bar">
+      <input type="text" id="busqueda" class="filters-busqueda" placeholder="🔍 Buscar nombre, teléfono, motivo o notas…" autocomplete="off" aria-label="Buscar en la lista">
+
+      <div class="filters-inline-row">
+        <div class="filters-strip">
+          <span class="filters-strip-label" id="filtro-estado-heading">Estado</span>
+          <div class="filter-chips" id="filtroEstadoChips" role="group" aria-labelledby="filtro-estado-heading">
+            <button type="button" class="filter-chip activa" data-estado="">Todos</button>
+            <button type="button" class="filter-chip" data-estado="Atendida">🟡 Atendida</button>
+            <button type="button" class="filter-chip" data-estado="Finalizada">🟢 Finalizada</button>
+            <button type="button" class="filter-chip" data-estado="Enviada por correo">🔵 Enviada correo</button>
+          </div>
+        </div>
+        <div class="filters-strip">
+          <span class="filters-strip-label" id="filtro-fecha-heading">Fecha</span>
+          <div class="filter-chips" id="filtroFechaChips" role="group" aria-labelledby="filtro-fecha-heading">
+            <button type="button" class="filter-chip activa" data-fecha="todo">Sin filtrar</button>
+            <button type="button" class="filter-chip" data-fecha="hoy">Hoy</button>
+            <button type="button" class="filter-chip" data-fecha="semana">Semana</button>
+            <button type="button" class="filter-chip" data-fecha="personalizado">Rango…</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-rango-custom" id="filtroRangoPersonalizado" hidden>
+        <span class="filters-strip-label">Entre</span>
+        <div class="filter-rango-inline">
+          <label class="sr-only" for="filtroFechaDesde">Desde</label>
+          <input type="date" id="filtroFechaDesde" class="filter-date-input filter-date-compact" title="Desde">
+          <span class="filter-rango-sep" aria-hidden="true">–</span>
+          <label class="sr-only" for="filtroFechaHasta">Hasta</label>
+          <input type="date" id="filtroFechaHasta" class="filter-date-input filter-date-compact" title="Hasta">
+        </div>
+      </div>
     </div>
 
     <!-- Tabla -->
@@ -121,11 +153,19 @@
             <label for="nombre_llamante">Nombre del Llamante:</label>
             <input type="text" id="nombre_llamante" placeholder="Ej: Juan Pérez" required>
           </div>
-          <div class="form-group">
+          <div class="form-group" id="grupoTelefono">
             <label for="numero_telefono">Teléfono:</label>
             <input type="tel" id="numero_telefono" placeholder="Ej: 612345678" required>
             <span class="campo-error" id="errorTelefono"></span>
           </div>
+        </div>
+
+        <div class="form-group checkbox-row">
+          <label class="checkbox-label" for="sin_telefono">
+            <input type="checkbox" id="sin_telefono" class="checkbox-input">
+            <span class="checkbox-ui" aria-hidden="true"></span>
+            <span class="checkbox-text">Sin teléfono (no apuntar)</span>
+          </label>
         </div>
 
         <div class="form-group">

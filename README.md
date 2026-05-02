@@ -71,6 +71,32 @@ Se abrirá la aplicación Electron automáticamente.
 npm run dev
 ```
 
+El backend de desarrollo usa el puerto **5001** (`SAT_BACKEND_PORT`), para no chocar con instancias antiguas en **5000** (por ejemplo `backend.exe` de la app empaquetada).
+
+### Liberar puertos 5000 y 5001 antes de arrancar (Windows)
+
+Si quieres cerrar procesos que sigan escuchando en **5000** u **5001** (Python o `backend.exe` viejos) y luego abrir el entorno de desarrollo:
+
+```powershell
+npm run dev:clean
+```
+
+Equivale a ejecutar `scripts/free-port-dev.ps1` y después `npm run dev`. Para solo **ver** qué PIDs usarían esos puertos, sin matarlos:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/free-port-dev.ps1 -WhatIf
+```
+
+### Tests del API (pytest)
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+Incluye comprobaciones mínimas: crear llamada **sin teléfono**, estados **válidos** e **inválidos**, y nombre obligatorio.
+
 ## 📊 Uso
 
 1. **Nueva Llamada**: Haz clic en el botón "+ Nueva Llamada"
@@ -93,7 +119,9 @@ App Llamadas/
 │   ├── app.py              # Servidor Flask
 │   ├── models.py           # Modelo de datos
 │   ├── database.py         # Configuración de BD
-│   └── requirements.txt     # Dependencias Python
+│   ├── requirements.txt    # Dependencias Python
+│   ├── requirements-dev.txt # pytest (desarrollo)
+│   └── tests/              # Tests API (pytest)
 ├── frontend/
 │   ├── main.js             # Proceso Electron
 │   ├── preload.js          # Seguridad Electron

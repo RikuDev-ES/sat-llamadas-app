@@ -7,7 +7,8 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "dev": "concurrently \"cd backend && python app.py\" \"electron .\"",
+    "dev": "cross-env SAT_BACKEND_PORT=5001 concurrently \"cd backend && python app.py\" \"electron .\"",
+    "dev:clean": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/free-port-dev.ps1 && npm run dev",
     "build:backend": "cd backend && \"C:\\Users\\RIKUDEV\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" -m PyInstaller --onefile --name backend --distpath dist --noconfirm app.py",
     "build:electron": "node scripts/package-electron.cjs",
     "build:copy-backend": "node scripts/copy-backend.cjs",
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@electron/packager": "^20.0.0",
     "concurrently": "^8.2.0",
+    "cross-env": "^10.1.0",
     "electron": "^30.0.0",
     "electron-builder": "^24.13.3",
     "electron-is-dev": "^2.0.0"

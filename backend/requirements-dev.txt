@@ -1,0 +1,3 @@
+# Dependencias solo para desarrollo / CI (tests)
+-r requirements.txt
+pytest>=8.0.0
