@@ -40,6 +40,9 @@ const panelOverlay        = document.querySelector(".panel-overlay");
 const dialogConfirm       = document.getElementById("dialogConfirm");
 const dialogCancelar      = document.getElementById("dialogCancelar");
 const dialogEliminar      = document.getElementById("dialogEliminar");
+const dialogRestore       = document.getElementById("dialogRestore");
+const dialogRestoreCancelar  = document.getElementById("dialogRestoreCancelar");
+const dialogRestoreConfirmar = document.getElementById("dialogRestoreConfirmar");
 const dialogEmail         = document.getElementById("dialogEmail");
 const btnConfigEmail      = document.getElementById("btnConfigEmail");
 const dialogEmailCancelar = document.getElementById("dialogEmailCancelar");
@@ -299,10 +302,16 @@ btnBackup?.addEventListener("click", async () => {
   }
 });
 
-btnRestore?.addEventListener("click", async () => {
-  // Confirmación simple
-  const okConfirm = confirm("Restaurar un backup reemplazará la base de datos actual. ¿Continuar?");
-  if (!okConfirm) return;
+btnRestore?.addEventListener("click", () => {
+  dialogRestore?.classList.add("active");
+});
+
+dialogRestoreCancelar?.addEventListener("click", () => {
+  dialogRestore?.classList.remove("active");
+});
+
+dialogRestoreConfirmar?.addEventListener("click", async () => {
+  dialogRestore?.classList.remove("active");
   try {
     const ok = await window.electronAPI.restoreBackup();
     if (ok) mostrarExito("Backup restaurado");
@@ -338,6 +347,11 @@ document.addEventListener(
     const mod = e.ctrlKey || e.metaKey;
 
     if (key === "Escape") {
+      if (dialogRestore?.classList.contains("active")) {
+        e.preventDefault();
+        dialogRestoreCancelar?.click();
+        return;
+      }
       if (dialogConfirm.classList.contains("active")) {
         e.preventDefault();
         dialogCancelar.click();
@@ -356,13 +370,20 @@ document.addEventListener(
     }
 
     const modalAbierto =
+      (dialogRestore?.classList.contains("active") ?? false) ||
       dialogConfirm.classList.contains("active") ||
       dialogEmail.classList.contains("active");
 
     if (mod && key.toLowerCase() === "n") {
       if (modalAbierto) return;
       const t = e.target;
-      if (t && (t.closest?.("#formLlamada") || t.closest?.("#dialogEmail"))) return;
+      if (
+        t &&
+        (t.closest?.("#formLlamada") ||
+          t.closest?.("#dialogEmail") ||
+          t.closest?.("#dialogRestore"))
+      )
+        return;
       e.preventDefault();
       abrirPanelNueva();
       return;

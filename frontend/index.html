@@ -116,6 +116,17 @@
     </div>
   </div>
 
+  <!-- Diálogo restaurar backup (evita confirm() nativo en Electron) -->
+  <div id="dialogRestore" class="dialog-overlay">
+    <div class="dialog-box">
+      <p>Restaurar un backup reemplazará la base de datos actual. ¿Desea continuar?</p>
+      <div class="dialog-buttons">
+        <button id="dialogRestoreCancelar" type="button" class="btn btn-secondary">Cancelar</button>
+        <button id="dialogRestoreConfirmar" type="button" class="btn btn-delete">Restaurar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal configuración email -->
   <div id="dialogEmail" class="dialog-overlay">
     <div class="dialog-box" style="max-width:460px">

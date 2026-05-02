@@ -76,6 +76,9 @@ def _parse_datetime(value: str) -> datetime:
 
 _ESTADOS_VALIDOS = {"Atendida", "Finalizada", "Enviada por correo"}
 
+# Límite de notas (Text en SQLite; evita payloads enormes)
+_NOTAS_MAX_LEN = 50_000
+
 
 def _validar_llamada_payload(data: dict, parcial: bool) -> tuple[bool, str]:
     """
@@ -108,13 +111,19 @@ def _validar_llamada_payload(data: dict, parcial: bool) -> tuple[bool, str]:
             if len(str(data[field])) > max_len:
                 return False, f"El campo '{field}' supera {max_len} caracteres"
 
-    if "duracion_minutos" in data and data.get("duracion_minutos") is not None:
-        try:
-            mins = int(data.get("duracion_minutos", 0))
-            if mins < 0 or mins > 24 * 60:
-                return False, "La duración debe estar entre 0 y 1440 minutos"
-        except Exception:
-            return False, "La duración debe ser un número entero"
+    if "notas" in data and data.get("notas") is not None:
+        if len(str(data["notas"])) > _NOTAS_MAX_LEN:
+            return False, f"El campo 'notas' supera {_NOTAS_MAX_LEN} caracteres"
+
+    if "duracion_minutos" in data:
+        dm = data.get("duracion_minutos")
+        if dm is not None:
+            try:
+                mins = int(dm)
+                if mins < 0 or mins > 24 * 60:
+                    return False, "La duración debe estar entre 0 y 1440 minutos"
+            except (TypeError, ValueError):
+                return False, "La duración debe ser un número entero"
 
     return True, ""
 
@@ -159,11 +168,14 @@ def create_llamada():
         ok, msg = _validar_llamada_payload(data or {}, parcial=False)
         if not ok:
             return jsonify({"error": msg}), 400
+        dm_raw = data.get("duracion_minutos", 0)
+        duracion_minutos = 0 if dm_raw is None else int(dm_raw)
+
         nueva = Llamada(
             fecha_hora       = _parse_datetime(data.get("fecha_hora")),
             numero_telefono  = data.get("numero_telefono", ""),
             nombre_llamante  = data.get("nombre_llamante", ""),
-            duracion_minutos = int(data.get("duracion_minutos", 0)),
+            duracion_minutos = duracion_minutos,
             motivo           = data.get("motivo", "Consulta SAT"),
             notas            = data.get("notas", ""),
             estado           = data.get("estado", "Atendida"),
@@ -199,7 +211,9 @@ def update_llamada(llamada_id: int):
         if "fecha_hora"       in data: llamada.fecha_hora       = _parse_datetime(data["fecha_hora"])
         if "numero_telefono"  in data: llamada.numero_telefono  = data["numero_telefono"]
         if "nombre_llamante"  in data: llamada.nombre_llamante  = data["nombre_llamante"]
-        if "duracion_minutos" in data: llamada.duracion_minutos = int(data["duracion_minutos"])
+        if "duracion_minutos" in data:
+            dm_raw = data["duracion_minutos"]
+            llamada.duracion_minutos = 0 if dm_raw is None else int(dm_raw)
         if "motivo"           in data: llamada.motivo           = data["motivo"]
         if "notas"            in data: llamada.notas            = data["notas"]
         if "estado"           in data: llamada.estado           = data["estado"]

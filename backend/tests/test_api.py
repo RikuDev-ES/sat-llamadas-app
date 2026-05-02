@@ -75,3 +75,59 @@ def test_post_sin_nombre_obligatorio(client):
         },
     )
     assert r.status_code == 400
+
+
+def test_post_notas_demasiado_largas(client):
+    r = client.post(
+        "/api/llamadas",
+        json={
+            "fecha_hora": "2026-04-29T12:00",
+            "numero_telefono": "612345678",
+            "nombre_llamante": "Test",
+            "duracion_minutos": 0,
+            "motivo": "x",
+            "notas": "x" * 50_001,
+            "estado": "Atendida",
+        },
+    )
+    assert r.status_code == 400
+    assert "notas" in r.get_json().get("error", "").lower()
+
+
+def test_post_duracion_invalida(client):
+    r = client.post(
+        "/api/llamadas",
+        json={
+            "fecha_hora": "2026-04-29T12:00",
+            "numero_telefono": "612345678",
+            "nombre_llamante": "Test",
+            "duracion_minutos": "no-es-numero",
+            "motivo": "x",
+            "notas": "",
+            "estado": "Atendida",
+        },
+    )
+    assert r.status_code == 400
+
+
+def test_put_duracion_null_es_cero(client):
+    r1 = client.post(
+        "/api/llamadas",
+        json={
+            "fecha_hora": "2026-04-29T12:00",
+            "numero_telefono": "612345678",
+            "nombre_llamante": "Dur cero",
+            "duracion_minutos": 30,
+            "motivo": "x",
+            "notas": "",
+            "estado": "Atendida",
+        },
+    )
+    assert r1.status_code == 201
+    lid = r1.get_json()["id"]
+    r2 = client.put(
+        f"/api/llamadas/{lid}",
+        json={"duracion_minutos": None},
+    )
+    assert r2.status_code == 200
+    assert r2.get_json()["duracion_minutos"] == 0

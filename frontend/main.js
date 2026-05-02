@@ -133,9 +133,8 @@ function waitForBackend({ timeoutMs = 12000, intervalMs = 400 } = {}) {
 
       http
         .get(url, (res) => {
-          // basta con que responda (200 normalmente)
           res.resume();
-          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 500) {
+          if (res.statusCode === 200) {
             resolve(true);
           } else {
             setTimeout(tick, intervalMs);
@@ -291,6 +290,8 @@ ipcMain.handle("enviar-correo", async (_event, datos) => {
   // PowerShell en Windows interpreta bien UTF-16 LE si incluye BOM.
   fs.writeFileSync(tmpFile, "\ufeff" + psScript, "utf16le");
 
+  const MAIL_PS_TIMEOUT_MS = 45_000;
+
   return new Promise((resolve, reject) => {
     const env = {
       ...process.env,
@@ -306,23 +307,41 @@ ipcMain.handle("enviar-correo", async (_event, datos) => {
       "-File", tmpFile,
     ], { env });
 
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      try { ps.kill(); } catch { /* ignore */ }
+      try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+      reject(new Error("Tiempo de espera agotado al abrir Outlook (COM)."));
+    }, MAIL_PS_TIMEOUT_MS);
+
     let stdout = "";
     let stderr = "";
     ps.stdout.on("data", (d) => { stdout += d.toString(); console.log("[PS stdout]", d.toString()); });
     ps.stderr.on("data", (d) => { stderr += d.toString(); console.error("[PS stderr]", d.toString()); });
 
+    const finish = (fn) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      fn();
+    };
+
     ps.on("close", (code) => {
       console.log(`[PS] Salió con código ${code}. stdout: ${stdout} stderr: ${stderr}`);
-      try { fs.unlinkSync(tmpFile); } catch {}
+      try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
       const errText = (stderr || "").trim();
-      if (code === 0 && errText === "") resolve(true);
-      else reject(new Error((errText || stdout || "").trim() || `PowerShell salió con código ${code}`));
+      finish(() => {
+        if (code === 0 && errText === "") resolve(true);
+        else reject(new Error((errText || stdout || "").trim() || `PowerShell salió con código ${code}`));
+      });
     });
 
     ps.on("error", (err) => {
       console.error("[PS] Error al lanzar PowerShell:", err);
-      try { fs.unlinkSync(tmpFile); } catch {}
-      reject(err);
+      try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+      finish(() => { reject(err); });
     });
   });
 });
