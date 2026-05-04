@@ -44,16 +44,18 @@ const dialogRestore       = document.getElementById("dialogRestore");
 const dialogRestoreCancelar  = document.getElementById("dialogRestoreCancelar");
 const dialogRestoreConfirmar = document.getElementById("dialogRestoreConfirmar");
 const dialogEmail         = document.getElementById("dialogEmail");
-const btnConfigEmail      = document.getElementById("btnConfigEmail");
 const dialogEmailCancelar = document.getElementById("dialogEmailCancelar");
 const dialogEmailGuardar  = document.getElementById("dialogEmailGuardar");
 const inputEmailDefault   = document.getElementById("inputEmailDefault");
 const inputFirmaEmail     = document.getElementById("inputFirmaEmail");
 const btnModoOscuro       = document.getElementById("btnModoOscuro");
-const btnDatos            = document.getElementById("btnDatos");
-const btnBackup           = document.getElementById("btnBackup");
-const btnRestore          = document.getElementById("btnRestore");
-const btnExportarCSV      = document.getElementById("btnExportarCSV");
+const btnAjustes          = document.getElementById("btnAjustes");
+const menuAjustes         = document.getElementById("menuAjustes");
+const menuItemConfigCorreo = document.getElementById("menuItemConfigCorreo");
+const menuItemDatos       = document.getElementById("menuItemDatos");
+const menuItemBackup      = document.getElementById("menuItemBackup");
+const menuItemRestore     = document.getElementById("menuItemRestore");
+const menuItemExportarCSV = document.getElementById("menuItemExportarCSV");
 const busquedaInput       = document.getElementById("busqueda");
 const btnAhora            = document.getElementById("btnAhora");
 const paginacionDiv       = document.getElementById("paginacion");
@@ -273,8 +275,33 @@ dialogEliminar.addEventListener("click", () => {
   }
 });
 
-// Configuración de email por defecto y firma
-btnConfigEmail.addEventListener("click", () => {
+function cerrarMenuAjustes() {
+  if (!menuAjustes || !btnAjustes) return;
+  menuAjustes.hidden = true;
+  btnAjustes.setAttribute("aria-expanded", "false");
+}
+
+function toggleMenuAjustes() {
+  if (!menuAjustes || !btnAjustes) return;
+  const abrir = menuAjustes.hidden;
+  menuAjustes.hidden = !abrir;
+  btnAjustes.setAttribute("aria-expanded", abrir ? "true" : "false");
+}
+
+btnAjustes?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleMenuAjustes();
+});
+
+document.addEventListener("click", (e) => {
+  if (menuAjustes?.hidden) return;
+  if (e.target.closest?.(".header-dropdown-wrap")) return;
+  cerrarMenuAjustes();
+});
+
+// Configuración de email por defecto y firma (menú Ajustes)
+menuItemConfigCorreo?.addEventListener("click", () => {
+  cerrarMenuAjustes();
   inputEmailDefault.value = localStorage.getItem("emailDefault") || "";
   inputFirmaEmail.value   = localStorage.getItem("emailFirma")   || "";
   dialogEmail.classList.add("active");
@@ -292,8 +319,9 @@ dialogEmailGuardar.addEventListener("click", () => {
 // Modo oscuro / claro
 btnModoOscuro.addEventListener("click", toggleModoOscuro);
 
-// Datos / Backups
-btnDatos?.addEventListener("click", async () => {
+// Datos / Backups (menú Ajustes)
+menuItemDatos?.addEventListener("click", async () => {
+  cerrarMenuAjustes();
   try {
     await window.electronAPI.openDataFolder();
     mostrarExito("Carpeta de datos abierta");
@@ -302,7 +330,8 @@ btnDatos?.addEventListener("click", async () => {
   }
 });
 
-btnBackup?.addEventListener("click", async () => {
+menuItemBackup?.addEventListener("click", async () => {
+  cerrarMenuAjustes();
   try {
     const ok = await window.electronAPI.exportBackup();
     if (ok) mostrarExito("Backup exportado correctamente");
@@ -311,7 +340,8 @@ btnBackup?.addEventListener("click", async () => {
   }
 });
 
-btnRestore?.addEventListener("click", () => {
+menuItemRestore?.addEventListener("click", () => {
+  cerrarMenuAjustes();
   dialogRestore?.classList.add("active");
 });
 
@@ -319,18 +349,44 @@ dialogRestoreCancelar?.addEventListener("click", () => {
   dialogRestore?.classList.remove("active");
 });
 
+/**
+ * Indica al backend Flask que cierre conexiones antes/después de sustituir datos.db
+ * (en desarrollo el servidor sigue vivo; sin esto la API sigue viendo la BD vieja).
+ */
+async function postAdminDbRestore(pathSuffix) {
+  const base = String(API_URL || "").replace(/\/$/, "");
+  try {
+    const res = await fetch(`${base}${pathSuffix}`, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 dialogRestoreConfirmar?.addEventListener("click", async () => {
   dialogRestore?.classList.remove("active");
   try {
+    await postAdminDbRestore("/admin/prepare-db-restore");
     const ok = await window.electronAPI.restoreBackup();
-    if (ok) mostrarExito("Backup restaurado");
+    await postAdminDbRestore("/admin/finish-db-restore");
+    if (ok) {
+      mostrarExito("Backup restaurado");
+      paginaActual = 1;
+      await Promise.all([cargarLlamadas(), cargarEstadisticas()]);
+    }
   } catch (e) {
     mostrarError(`No se pudo restaurar: ${e?.message || "error"}`);
   }
 });
 
-// Exportar CSV
-btnExportarCSV.addEventListener("click", exportarCSV);
+// Exportar CSV (menú Ajustes)
+menuItemExportarCSV?.addEventListener("click", () => {
+  cerrarMenuAjustes();
+  exportarCSV();
+});
 
 // Delegación de eventos en la tabla (email, duplicar, editar, eliminar)
 llamadasBody.addEventListener("click", (e) => {
@@ -356,6 +412,11 @@ document.addEventListener(
     const mod = e.ctrlKey || e.metaKey;
 
     if (key === "Escape") {
+      if (menuAjustes && !menuAjustes.hidden) {
+        e.preventDefault();
+        cerrarMenuAjustes();
+        return;
+      }
       if (dialogRestore?.classList.contains("active")) {
         e.preventDefault();
         dialogRestoreCancelar?.click();
@@ -379,6 +440,7 @@ document.addEventListener(
     }
 
     const modalAbierto =
+      (menuAjustes && !menuAjustes.hidden) ||
       (dialogRestore?.classList.contains("active") ?? false) ||
       dialogConfirm.classList.contains("active") ||
       dialogEmail.classList.contains("active");
@@ -390,7 +452,8 @@ document.addEventListener(
         t &&
         (t.closest?.("#formLlamada") ||
           t.closest?.("#dialogEmail") ||
-          t.closest?.("#dialogRestore"))
+          t.closest?.("#dialogRestore") ||
+          t.closest?.("#menuAjustes"))
       )
         return;
       e.preventDefault();

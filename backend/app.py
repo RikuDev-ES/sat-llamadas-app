@@ -9,6 +9,8 @@ Rutas disponibles:
     DELETE /api/llamadas/<id>         → Elimina una llamada.
     GET    /api/estadisticas          → Contadores hoy / semana / mes / total.
     GET    /api/health                → Health-check del servidor.
+    POST   /api/admin/prepare-db-restore → Cierra conexiones antes de restaurar datos.db.
+    POST   /api/admin/finish-db-restore  → Tras restaurar, fuerza reconexión al archivo.
 
 Configuración:
     - Host:  127.0.0.1 (solo acceso local)
@@ -278,6 +280,35 @@ def get_estadisticas():
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
+
+
+# ─── Rutas admin (solo localhost; usadas al restaurar datos.db) ───────────────
+@app.route("/api/admin/prepare-db-restore", methods=["POST"])
+def prepare_db_restore():
+    """
+    Cierra el pool de conexiones y vuelca el WAL antes de sustituir datos.db
+    desde fuera (p. ej. Electron). Sin esto, Flask seguiría leyendo la BD antigua.
+    """
+    try:
+        with engine.begin() as conn:
+            conn.execute(sqlalchemy.text("PRAGMA wal_checkpoint(TRUNCATE)"))
+    except Exception as e:
+        logger.warning("prepare_db_restore (checkpoint): %s", e)
+    try:
+        engine.dispose()
+    except Exception as e:
+        logger.warning("prepare_db_restore (dispose): %s", e)
+    return jsonify({"ok": True}), 200
+
+
+@app.route("/api/admin/finish-db-restore", methods=["POST"])
+def finish_db_restore():
+    """Tras copiar el nuevo datos.db, fuerza conexiones nuevas al archivo actual."""
+    try:
+        engine.dispose()
+    except Exception as e:
+        logger.warning("finish_db_restore: %s", e)
+    return jsonify({"ok": True}), 200
 
 
 # ─── Ruta: Health-check ───────────────────────────────────────────────────────

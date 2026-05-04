@@ -7,6 +7,15 @@ def test_health(client):
     assert r.get_json().get("status") == "ok"
 
 
+def test_admin_prepare_and_finish_db_restore(client):
+    r1 = client.post("/api/admin/prepare-db-restore")
+    assert r1.status_code == 200
+    assert r1.get_json().get("ok") is True
+    r2 = client.post("/api/admin/finish-db-restore")
+    assert r2.status_code == 200
+    assert r2.get_json().get("ok") is True
+
+
 def test_post_llamada_sin_telefono(client):
     payload = {
         "fecha_hora": "2026-04-29T12:00",

@@ -194,6 +194,15 @@ ipcMain.handle("restore-backup", async () => {
   // Asegurar carpeta destino
   try { fs.mkdirSync(path.dirname(dbPath), { recursive: true }); } catch {}
   fs.copyFileSync(src, dbPath);
+  // Evitar que un -wal/-shm antiguos desvirtúen el archivo recién copiado
+  for (const suffix of ["-wal", "-shm"]) {
+    try {
+      const sidecar = dbPath + suffix;
+      if (fs.existsSync(sidecar)) fs.unlinkSync(sidecar);
+    } catch (e) {
+      console.warn("[restore-backup] No se pudo borrar sidecar", suffix, e?.message || e);
+    }
+  }
 
   // Re-levantar backend si aplica
   if (app.isPackaged) {
