@@ -9,6 +9,7 @@ Rutas disponibles:
     DELETE /api/llamadas/<id>         → Elimina una llamada.
     GET    /api/estadisticas          → Contadores hoy / semana / mes / total.
     GET    /api/health                → Health-check del servidor.
+    POST   /api/admin/checkpoint-db       → Vuelca WAL al archivo principal (antes de copiar .db).
     POST   /api/admin/prepare-db-restore → Cierra conexiones antes de restaurar datos.db.
     POST   /api/admin/finish-db-restore  → Tras restaurar, fuerza reconexión al archivo.
 
@@ -283,6 +284,21 @@ def get_estadisticas():
 
 
 # ─── Rutas admin (solo localhost; usadas al restaurar datos.db) ───────────────
+@app.route("/api/admin/checkpoint-db", methods=["POST"])
+def checkpoint_db():
+    """
+    Vuelca el contenido WAL al archivo datos.db principal.
+    Sin esto, copiar solo datos.db (p. ej. exportar backup) puede dejar un .db vacío o incompleto.
+    """
+    try:
+        with engine.begin() as conn:
+            conn.execute(sqlalchemy.text("PRAGMA wal_checkpoint(TRUNCATE)"))
+    except Exception as e:
+        logger.warning("checkpoint_db: %s", e)
+        return jsonify({"ok": False, "error": str(e)}), 500
+    return jsonify({"ok": True}), 200
+
+
 @app.route("/api/admin/prepare-db-restore", methods=["POST"])
 def prepare_db_restore():
     """

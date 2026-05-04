@@ -58,9 +58,40 @@ function getBackupDir() {
   return backups;
 }
 
-function backupNow({ reason = "startup", keep = 30 } = {}) {
+/** Pide a Flask volcar WAL → datos.db antes de copiar el archivo (export / backup en disco). */
+function postAdminCheckpoint() {
+  const url = `${getApiBase()}/admin/checkpoint-db`;
+  return new Promise((resolve) => {
+    try {
+      const req = http.request(
+        url,
+        { method: "POST", timeout: 12000 },
+        (res) => {
+          res.resume();
+          resolve(res.statusCode === 200);
+        }
+      );
+      req.on("error", () => resolve(false));
+      req.on("timeout", () => {
+        try {
+          req.destroy();
+        } catch {
+          /* ignore */
+        }
+        resolve(false);
+      });
+      req.end();
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
+async function backupNow({ reason = "startup", keep = 30 } = {}) {
   const dbPath = getDbPath();
   if (!fs.existsSync(dbPath)) return null;
+
+  await postAdminCheckpoint();
 
   const stamp = new Date()
     .toISOString()
@@ -168,6 +199,13 @@ ipcMain.handle("export-backup", async () => {
   });
   if (canceled || !filePath) return false;
 
+  const okCk = await postAdminCheckpoint();
+  if (!okCk) {
+    throw new Error(
+      "No se pudo volcar la base de datos al disco antes de exportar. " +
+        "Si usa modo desarrollo, deje Flask en marcha (npm run dev)."
+    );
+  }
   fs.copyFileSync(dbPath, filePath);
   return true;
 });
@@ -183,8 +221,10 @@ ipcMain.handle("restore-backup", async () => {
   const src = filePaths[0];
   const dbPath = getDbPath();
 
-  // Backup previo por seguridad
-  try { backupNow({ reason: "pre-restore", keep: 60 }); } catch {}
+  // Backup previo por seguridad (checkpoint para que la copia incluya datos en WAL)
+  try {
+    await backupNow({ reason: "pre-restore", keep: 60 });
+  } catch {}
 
   // En producción podemos reiniciar el backend para liberar locks.
   if (backendProcess) {
@@ -382,23 +422,31 @@ function createWindow() {
 
 // ─── Ciclo de vida ────────────────────────────────────────────────────────────
 
-app.whenReady().then(() => {
-  // Backup automático al iniciar (si existe BD)
-  try { backupNow({ reason: "startup", keep: 30 }); } catch {}
-
-  startBackend();
+app.whenReady().then(async () => {
   if (app.isPackaged) {
-    waitForBackend()
-      .then(() => createWindow())
-      .catch((err) => {
-        dialog.showErrorBox(
-          "Servidor no disponible",
-          `No se pudo iniciar el servidor interno.\n\n${err.message}\n\nLa aplicación se abrirá igualmente, pero puede no cargar datos.`
-        );
-        createWindow();
-      });
+    startBackend();
+    try {
+      await waitForBackend();
+    } catch (err) {
+      dialog.showErrorBox(
+        "Servidor no disponible",
+        `No se pudo iniciar el servidor interno.\n\n${err.message}\n\nLa aplicación se abrirá igualmente, pero puede no cargar datos.`
+      );
+    }
+    // Tras arrancar Flask: checkpoint y copia de arranque coherentes con WAL
+    try {
+      await backupNow({ reason: "startup", keep: 30 });
+    } catch (e) {
+      console.warn("[backup] startup:", e?.message || e);
+    }
+    createWindow();
   } else {
     createWindow();
+    try {
+      await backupNow({ reason: "startup", keep: 30 });
+    } catch (e) {
+      console.warn("[backup] startup:", e?.message || e);
+    }
   }
 });
 

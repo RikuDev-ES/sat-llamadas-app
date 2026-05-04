@@ -7,6 +7,12 @@ def test_health(client):
     assert r.get_json().get("status") == "ok"
 
 
+def test_admin_checkpoint_db(client):
+    r = client.post("/api/admin/checkpoint-db")
+    assert r.status_code == 200
+    assert r.get_json().get("ok") is True
+
+
 def test_admin_prepare_and_finish_db_restore(client):
     r1 = client.post("/api/admin/prepare-db-restore")
     assert r1.status_code == 200
