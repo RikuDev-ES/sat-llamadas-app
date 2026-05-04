@@ -101,8 +101,11 @@ function httpPostLocal(fullUrl) {
 }
 
 /** Pide a Flask volcar WAL → datos.db antes de copiar el archivo (backup en disco desde main). */
-function postAdminCheckpoint() {
-  return httpPostLocal(`${getApiBase()}/admin/checkpoint-db`);
+async function postAdminCheckpoint() {
+  const port = backendPort || pickPort();
+  const path = "/api/admin/checkpoint-db";
+  if (await httpPostLocal(`http://127.0.0.1:${port}${path}`)) return true;
+  return httpPostLocal(`http://localhost:${port}${path}`);
 }
 
 async function backupNow({ reason = "startup", keep = 30 } = {}) {
@@ -217,7 +220,14 @@ ipcMain.handle("export-backup", async () => {
   });
   if (canceled || !filePath) return false;
 
-  // El checkpoint (WAL → disco) lo hace el renderer con fetch antes de llamar a este IPC.
+  // WAL → datos.db desde el proceso principal (mismo host/puerto que getConfig); el fetch del renderer suele fallar (null origin / CORS).
+  const okCk = await postAdminCheckpoint();
+  if (!okCk) {
+    throw new Error(
+      "No se pudo volcar la base de datos antes de exportar. Compruebe que el servidor Flask " +
+        "está en marcha y en el mismo puerto que la app (desarrollo: npm run dev, variable SAT_BACKEND_PORT)."
+    );
+  }
   fs.copyFileSync(dbPath, filePath);
   return true;
 });

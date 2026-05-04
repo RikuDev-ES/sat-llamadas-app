@@ -333,13 +333,6 @@ menuItemDatos?.addEventListener("click", async () => {
 menuItemBackup?.addEventListener("click", async () => {
   cerrarMenuAjustes();
   try {
-    if (!(await postAdminDbRestore("/admin/checkpoint-db"))) {
-      mostrarError(
-        "No se pudo preparar la copia (volcar la base de datos al disco). " +
-          "Compruebe que el servidor responde (en desarrollo: npm run dev con Flask activo)."
-      );
-      return;
-    }
     const ok = await window.electronAPI.exportBackup();
     if (ok) mostrarExito("Backup exportado correctamente");
   } catch (e) {
