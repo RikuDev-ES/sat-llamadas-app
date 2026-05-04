@@ -16,6 +16,7 @@ const os   = require("os");
 const fs   = require("fs");
 const { spawn } = require("child_process");
 const http = require("http");
+const https = require("https");
 
 // ─── Estado global ────────────────────────────────────────────────────────────
 let mainWindow     = null;
@@ -58,33 +59,50 @@ function getBackupDir() {
   return backups;
 }
 
-/** Pide a Flask volcar WAL → datos.db antes de copiar el archivo (export / backup en disco). */
-function postAdminCheckpoint() {
-  const url = `${getApiBase()}/admin/checkpoint-db`;
+/**
+ * POST al API local (mismo patrón que waitForBackend).
+ * No usar http.request(urlString): en varias versiones de Node/Electron ignora method u opciones.
+ */
+function httpPostLocal(fullUrl) {
+  let u;
+  try {
+    u = new URL(fullUrl);
+  } catch {
+    return Promise.resolve(false);
+  }
+  const portNum = u.port ? parseInt(u.port, 10) : u.protocol === "https:" ? 443 : 80;
+  const lib = u.protocol === "https:" ? https : http;
+  const opts = {
+    hostname: u.hostname,
+    port: portNum,
+    path: u.pathname + u.search,
+    method: "POST",
+    headers: { "Content-Length": "0", Accept: "application/json" },
+  };
   return new Promise((resolve) => {
-    try {
-      const req = http.request(
-        url,
-        { method: "POST", timeout: 12000 },
-        (res) => {
-          res.resume();
-          resolve(res.statusCode === 200);
-        }
-      );
-      req.on("error", () => resolve(false));
-      req.on("timeout", () => {
-        try {
-          req.destroy();
-        } catch {
-          /* ignore */
-        }
-        resolve(false);
-      });
-      req.end();
-    } catch {
+    const req = lib.request(opts, (res) => {
+      res.resume();
+      resolve(res.statusCode === 200);
+    });
+    req.on("error", (err) => {
+      console.warn("[httpPostLocal]", fullUrl, err?.message || err);
       resolve(false);
-    }
+    });
+    req.setTimeout(12000, () => {
+      try {
+        req.destroy();
+      } catch {
+        /* ignore */
+      }
+      resolve(false);
+    });
+    req.end();
   });
+}
+
+/** Pide a Flask volcar WAL → datos.db antes de copiar el archivo (backup en disco desde main). */
+function postAdminCheckpoint() {
+  return httpPostLocal(`${getApiBase()}/admin/checkpoint-db`);
 }
 
 async function backupNow({ reason = "startup", keep = 30 } = {}) {
@@ -199,13 +217,7 @@ ipcMain.handle("export-backup", async () => {
   });
   if (canceled || !filePath) return false;
 
-  const okCk = await postAdminCheckpoint();
-  if (!okCk) {
-    throw new Error(
-      "No se pudo volcar la base de datos al disco antes de exportar. " +
-        "Si usa modo desarrollo, deje Flask en marcha (npm run dev)."
-    );
-  }
+  // El checkpoint (WAL → disco) lo hace el renderer con fetch antes de llamar a este IPC.
   fs.copyFileSync(dbPath, filePath);
   return true;
 });
