@@ -62,6 +62,9 @@ async function main() {
       /^\/dist-electron-[^/]+(\/|$)/,
       /^\/build\.bat$/i,
       /^\/README\.md$/i,
+      // No empaquetar ZIPs de releases (si no, cada versión incluye la anterior y el .zip crece enormemente)
+      /^\/SAT-Llamadas-win32-x64\.zip$/i,
+      /^\/SAT-Llamadas-win32-x64-v.*\.zip$/i,
     ],
   });
 
