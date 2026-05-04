@@ -15,11 +15,17 @@
       <h1>📞 Registro de Llamadas SAT</h1>
       <div class="header-actions">
         <button id="btnModoOscuro" class="btn btn-icon" title="Modo oscuro">🌙</button>
-        <button id="btnConfigEmail" class="btn btn-icon" title="Configurar email">⚙️</button>
-        <button id="btnDatos" class="btn btn-secondary">🗂 Datos</button>
-        <button id="btnBackup" class="btn btn-secondary">💾 Backup</button>
-        <button id="btnRestore" class="btn btn-secondary">♻️ Restaurar</button>
-        <button id="btnExportarCSV" class="btn btn-secondary">⬇️ Exportar CSV</button>
+        <div class="header-dropdown-wrap">
+          <button type="button" id="btnAjustes" class="btn btn-secondary" aria-haspopup="menu" aria-expanded="false" aria-controls="menuAjustes" title="Ajustes y datos">⚙️ Ajustes</button>
+          <div id="menuAjustes" class="header-dropdown" role="menu" hidden>
+            <button type="button" class="header-dropdown-item" role="menuitem" id="menuItemConfigCorreo">📧 Configurar correo…</button>
+            <button type="button" class="header-dropdown-item" role="menuitem" id="menuItemDatos">🗂 Carpeta de datos</button>
+            <button type="button" class="header-dropdown-item" role="menuitem" id="menuItemBackup">💾 Exportar backup</button>
+            <button type="button" class="header-dropdown-item" role="menuitem" id="menuItemRestore">♻️ Restaurar backup…</button>
+            <div class="header-dropdown-sep" role="separator" aria-hidden="true"></div>
+            <button type="button" class="header-dropdown-item" role="menuitem" id="menuItemExportarCSV">⬇️ Exportar CSV</button>
+          </div>
+        </div>
         <button id="btnNuevaLlamada" class="btn btn-primary">+ Nueva Llamada</button>
       </div>
     </header>
@@ -122,7 +128,7 @@
       <p>Restaurar un backup reemplazará la base de datos actual. ¿Desea continuar?</p>
       <div class="dialog-buttons">
         <button id="dialogRestoreCancelar" type="button" class="btn btn-secondary">Cancelar</button>
-        <button id="dialogRestoreConfirmar" type="button" class="btn btn-delete">Restaurar</button>
+        <button id="dialogRestoreConfirmar" type="button" class="btn btn-restore">Restaurar</button>
       </div>
     </div>
   </div>
@@ -208,7 +214,7 @@
         </div>
 
         <div class="panel-footer">
-          <button type="submit" class="btn btn-primary">Guardar</button>
+          <button type="submit" class="btn btn-restore">Guardar</button>
           <button type="button" class="btn btn-panel-cancel" id="cancelBtn">Cancelar</button>
         </div>
       </form>
