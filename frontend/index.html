@@ -110,8 +110,8 @@
     <div class="dialog-box">
       <p>¿Está seguro que desea eliminar esta llamada?</p>
       <div class="dialog-buttons">
-        <button id="dialogCancelar" class="btn btn-secondary">Cancelar</button>
         <button id="dialogEliminar" class="btn btn-delete">Eliminar</button>
+        <button id="dialogCancelar" class="btn btn-secondary">Cancelar</button>
       </div>
     </div>
   </div>
@@ -208,13 +208,14 @@
         </div>
 
         <div class="panel-footer">
-          <button type="button" class="btn btn-secondary" id="cancelBtn">Cancelar</button>
           <button type="submit" class="btn btn-primary">Guardar</button>
+          <button type="button" class="btn btn-panel-cancel" id="cancelBtn">Cancelar</button>
         </div>
       </form>
     </div>
   </div>
 
+  <div id="notificacionesBar" class="notificaciones-bar" aria-live="polite" aria-relevant="additions"></div>
   <script src="app.js"></script>
 </body>
 </html>

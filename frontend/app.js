@@ -141,15 +141,24 @@ window.addEventListener("resize", () => {
 // ─── Paginación dinámica ──────────────────────────────────────────────────────
 
 /**
- * Calcula cuántas filas caben en el contenedor de la tabla según su altura actual.
+ * Calcula cuántas filas caben según el alto útil del área principal (no el alto
+ * del recuadro de la tabla, que se encoge al contenido y daría mal la paginación).
  * Garantiza un mínimo de 5 filas para evitar paginaciones demasiado pequeñas.
  * @returns {number} Número de filas por página.
  */
 function calcularPorPagina() {
-  const contenedor = document.querySelector(".table-container");
-  if (!contenedor) return 10;
-  const alturaDisponible = contenedor.clientHeight;
-  const alturaCabecera   = 44; // thead ≈ 44px
+  const main = document.querySelector(".main-content");
+  if (!main) return 10;
+  const pag = document.getElementById("paginacion");
+  const cs = getComputedStyle(main);
+  const padY =
+    (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+  const gapStr =
+    cs.rowGap && cs.rowGap !== "normal" ? cs.rowGap : cs.gap || "8px";
+  const rowGap = parseFloat(gapStr) || 8;
+  const pagH = pag ? pag.getBoundingClientRect().height : 0;
+  const alturaDisponible = main.clientHeight - padY - rowGap - pagH;
+  const alturaCabecera = 44; // thead ≈ 44px
   const filas = Math.floor((alturaDisponible - alturaCabecera) / FILA_ALTURA);
   return Math.max(5, filas);
 }
@@ -997,7 +1006,7 @@ function cargarTema() {
 // ─── Alertas ──────────────────────────────────────────────────────────────────
 
 /**
- * Muestra una notificación de error temporal en la esquina superior derecha.
+ * Muestra una notificación de error temporal en la barra inferior.
  * @param {string} mensaje — Texto a mostrar.
  */
 function mostrarError(mensaje) {
@@ -1005,7 +1014,7 @@ function mostrarError(mensaje) {
 }
 
 /**
- * Muestra una notificación de éxito temporal en la esquina superior derecha.
+ * Muestra una notificación de éxito temporal en la barra inferior.
  * @param {string} mensaje — Texto a mostrar.
  */
 function mostrarExito(mensaje) {
@@ -1020,10 +1029,11 @@ function mostrarExito(mensaje) {
  * @param {string} clase   — Clase CSS ('alerta-error' | 'alerta-exito').
  */
 function _mostrarAlerta(mensaje, clase) {
+  const bar = document.getElementById("notificacionesBar");
   const div = document.createElement("div");
   div.className = `alerta ${clase}`;
   div.textContent = mensaje;
-  document.body.appendChild(div);
+  (bar ?? document.body).appendChild(div);
   setTimeout(() => div.remove(), 4000);
 }
 

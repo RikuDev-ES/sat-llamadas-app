@@ -300,8 +300,9 @@ body {
   flex: 1;
   padding: 10px 16px;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
   gap: 8px;
   min-height: 0;
 }
@@ -310,9 +311,12 @@ body {
 .table-container {
   border-radius: 8px;
   border: 1px solid var(--border);
-  flex: 1;
-  overflow: hidden;
+  align-self: start;
+  width: 100%;
   min-height: 0;
+  max-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .table-container table {
@@ -501,6 +505,17 @@ body {
 
 .btn-secondary { background: var(--stats-bg); color: var(--text); border: 1px solid var(--border); }
 .btn-secondary:hover { background: var(--border); }
+
+/* Cancelar en pie de panel: misma estética que .btn-primary, tono rojo advertencia */
+.btn-panel-cancel {
+  background: #c0392b;
+  color: #fff;
+  border: none;
+}
+.btn-panel-cancel:hover {
+  background: #922b21;
+  transform: translateY(-1px);
+}
 
 .btn-icon {
   background: rgba(255,255,255,0.1);
@@ -815,25 +830,61 @@ body {
   box-shadow: 0 0 0 3px rgba(93,173,226,0.15);
 }
 
+/* ─── Barra de notificaciones (inferior, no tapa el header) ─ */
+.notificaciones-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1500;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+}
+
+.notificaciones-bar:empty {
+  display: none;
+}
+
+.notificaciones-bar:not(:empty) {
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -8px 28px var(--shadow);
+  pointer-events: none;
+}
+
+.notificaciones-bar .alerta {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 560px;
+  text-align: center;
+  animation: toastSlideUp 0.35s ease;
+}
+
 /* ─── Alertas ───────────────────────────────────────── */
 .alerta {
-  position: fixed;
-  top: 20px; right: 20px;
   padding: 14px 20px;
   border-radius: 8px;
   color: white;
   font-weight: 500;
-  z-index: 3000;
-  animation: slideInRight 0.3s ease;
-  max-width: 320px;
 }
 
-.alerta-error  { background: #e74c3c; }
-.alerta-exito  { background: #27ae60; }
+.alerta-error { background: #e74c3c; }
+.alerta-exito { background: #27ae60; }
 
-@keyframes slideInRight {
-  from { transform: translateX(400px); opacity: 0; }
-  to   { transform: translateX(0);     opacity: 1; }
+@keyframes toastSlideUp {
+  from {
+    transform: translateY(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* ─── Responsive ────────────────────────────────────── */
